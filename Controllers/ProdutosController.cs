@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using APIProdutos.Models;
 
 namespace APIProdutos.Controllers;
 
@@ -8,10 +9,17 @@ namespace APIProdutos.Controllers;
 
 public class ProdutosController : ControllerBase
 {
-    private static readonly string[] Produtos = { 
-        "Caderno", "Caneta", "Borracha", 
-        "Lápis","Mochila","Estojo", 
-        "Apontador", "Régua","Tesoura", "Cola"
+    private static readonly List<Produto> Produtos = new List<Produto>{ 
+        new Produto { Id = 1, Nome = "Caderno", Preco = 10.99m, Quantidade = 5 },
+        new Produto { Id = 2, Nome = "Caneta", Preco = 2.49m, Quantidade = 10 },
+        new Produto { Id = 3, Nome = "Lápis", Preco = 1.99m, Quantidade = 15 },
+        new Produto { Id = 4, Nome = "Borracha", Preco = 0.99m, Quantidade = 20 },
+        new Produto { Id = 5, Nome = "Mochila", Preco = 49.99m, Quantidade = 3 },
+        new Produto { Id = 6, Nome = "Estojo", Preco = 15.99m, Quantidade = 7 },
+        new Produto { Id = 7, Nome = "Apontador", Preco = 3.49m, Quantidade = 12 },
+        new Produto { Id = 8, Nome = "Régua", Preco = 5.99m, Quantidade = 8 },
+        new Produto { Id = 9, Nome = "Tesoura", Preco = 7.99m, Quantidade = 6 },
+        new Produto { Id = 10, Nome = "Cola", Preco = 4.99m, Quantidade = 9 }
     };
 
     [HttpGet]
@@ -24,23 +32,31 @@ public class ProdutosController : ControllerBase
     [HttpGet("{id}")]
     public IActionResult GetProdutoById(int id)
     {
+        // Lógica para obter um produto específico pelo ID
         if (id <= 0)
         {
             return BadRequest(new { message = "ID inválido. Tente novamente." });
         }
-        // Lógica para obter um produto específico pelo ID
-        return Ok(Produtos[id - 1]);  
+
+            var produto = Produtos.FirstOrDefault(p => p.Id == id);
+            if (produto == null)
+            {
+                return NotFound(new { message = "Produto não encontrado." });
+            }
+        
+        return Ok($"Produto encontrado: {produto.Nome}, Preço: {produto.Preco}, Quantidade: {produto.Quantidade}");  
     }
 
     [HttpPost]
-    public IActionResult CreateProduto([FromBody] string produto)
+    public IActionResult CreateProduto([FromBody] Produto produto)
     {
-        if (produto == null)
+        if (!ModelState.IsValid)
         {
-            return BadRequest(new { message = "Produto inválido. Tente novamente." });
+            return BadRequest(ModelState);
         }
         // Lógica para criar um novo produto
         return CreatedAtAction(nameof(GetProdutoById), new { id = 1 }, produto);
+        
     }
 
     [HttpPut("{id}")]
