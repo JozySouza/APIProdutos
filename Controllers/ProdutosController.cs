@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using APIProdutos.Models;
+using APIProdutos.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace APIProdutos.Controllers;
 
@@ -9,28 +11,23 @@ namespace APIProdutos.Controllers;
 
 public class ProdutosController : ControllerBase
 {
-    private static readonly List<Produto> Produtos = new List<Produto>{ 
-        new Produto { Id = 1, Nome = "Caderno", Preco = 10.99m, Quantidade = 5 },
-        new Produto { Id = 2, Nome = "Caneta", Preco = 2.49m, Quantidade = 10 },
-        new Produto { Id = 3, Nome = "Lápis", Preco = 1.99m, Quantidade = 15 },
-        new Produto { Id = 4, Nome = "Borracha", Preco = 0.99m, Quantidade = 20 },
-        new Produto { Id = 5, Nome = "Mochila", Preco = 49.99m, Quantidade = 3 },
-        new Produto { Id = 6, Nome = "Estojo", Preco = 15.99m, Quantidade = 7 },
-        new Produto { Id = 7, Nome = "Apontador", Preco = 3.49m, Quantidade = 12 },
-        new Produto { Id = 8, Nome = "Régua", Preco = 5.99m, Quantidade = 8 },
-        new Produto { Id = 9, Nome = "Tesoura", Preco = 7.99m, Quantidade = 6 },
-        new Produto { Id = 10, Nome = "Cola", Preco = 4.99m, Quantidade = 9 }
-    };
+ private readonly AppDBContext _context;
+
+    public ProdutosController(AppDBContext context)
+    {
+        _context = context;
+    }
 
     [HttpGet]
-    public IActionResult GetProdutos()
+    public async Task<IActionResult> GetProdutos()
     {
         // Lógica para obter produtos
+        var Produtos = await _context.Produtos.ToListAsync();
         return Ok(Produtos);
     }
 
     [HttpGet("{id}")]
-    public IActionResult GetProdutoById(int id)
+    public async Task<IActionResult> GetProdutoById(int id)
     {
         // Lógica para obter um produto específico pelo ID
         if (id <= 0)
@@ -38,7 +35,7 @@ public class ProdutosController : ControllerBase
             return BadRequest(new { message = "ID inválido. Tente novamente." });
         }
 
-            var produto = Produtos.FirstOrDefault(p => p.Id == id);
+            var produto = await _context.Produtos.FindAsync(id);
             if (produto == null)
             {
                 return NotFound(new { message = "Produto não encontrado." });
@@ -48,28 +45,47 @@ public class ProdutosController : ControllerBase
     }
 
     [HttpPost]
-    public IActionResult CreateProduto([FromBody] Produto produto)
+    public async Task<IActionResult> CreateProduto([FromBody] Produto produto)
     {
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
         }
         // Lógica para criar um novo produto
+        _context.Produtos.Add(produto);
+        await _context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetProdutoById), new { id = 1 }, produto);
         
     }
 
     [HttpPut("{id}")]
-    public IActionResult UpdateProduto(int id, [FromBody] object produto)
+    public async Task<IActionResult> UpdateProduto(int id, [FromBody] object produto)
     {
         // Lógica para atualizar um produto existente
-        return NoContent();
+        if(ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+        var produtoExistente = await _context.Produtos.FindAsync(id);
+        if (produtoExistente == null)
+        {
+            return NotFound(new { message = "Produto não encontrado." });
+        }
+        await _context.SaveChangesAsync();
+        return Ok($"Produto atualizado: {produtoExistente.Nome}, Preço: {produtoExistente.Preco}, Quantidade: {produtoExistente.Quantidade}");
     }
 
     [HttpDelete("{id}")]
-    public IActionResult DeleteProduto(int id)
+    public async Task<IActionResult> DeleteProduto(int id)
     {
         // Lógica para deletar um produto existente
-        return NoContent();
+        var produtoExistente = await _context.Produtos.FindAsync(id);
+        if (produtoExistente == null)
+        {
+            return NotFound(new { message = "Produto não encontrado." });
+        }
+        _context.Produtos.Remove(produtoExistente);
+        await _context.SaveChangesAsync();
+        return Ok($"Produto deletado: {produtoExistente.Nome}");
     }
 }
