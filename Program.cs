@@ -12,6 +12,16 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<AppDBContext>(options =>
     options.UseSqlite("Data Source=produtos.db"));
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -25,6 +35,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+app.UseCors("PermitirAngular"); // Use a política de CORS definida
 
 app.MapControllers();
 
