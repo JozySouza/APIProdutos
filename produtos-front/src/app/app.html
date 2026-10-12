@@ -1,0 +1,216 @@
+<main class="page-shell">
+  <header class="hero">
+    <div class="hero-copy">
+      <span class="eyebrow">APIProdutos</span>
+      <h1>Catálogo de Produtos</h1>
+      <p>Gerencie seu estoque e acompanhe cada alteração salva pela API.</p>
+    </div>
+    <div class="Marca" aria-hidden="true">PROD</div>
+  </header>
+
+  @if (mensagemErro()) {
+    <div class="notice notice-error" role="alert">{{ mensagemErro() }}</div>
+  }
+  @if (mensagemSucesso()) {
+    <div class="notice notice-success" role="status">{{ mensagemSucesso() }}</div>
+  }
+
+  <section class="panel create-panel" aria-labelledby="create-heading">
+    <div class="section-heading">
+      <div>
+        <span class="section-kicker">Novo cadastro</span>
+        <h2 id="create-heading">Adicionar produto</h2>
+      </div>
+    </div>
+    <form class="product-form" #createForm="ngForm" (ngSubmit)="adicionarProduto(createForm)">
+      <label>
+        <span>Nome do produto</span>
+        <input
+          name="newName"
+          type="text"
+          maxlength="100"
+          placeholder="Ex.: Café especial"
+          required
+          [(ngModel)]="novoProduto.nome"
+        />
+      </label>
+      <label>
+        <span>Preço (R$)</span>
+        <input
+          name="newPrice"
+          type="number"
+          min="0.01"
+          step="0.01"
+          placeholder="0,00"
+          required
+          [(ngModel)]="novoProduto.preco"
+        />
+      </label>
+      <label>
+        <span>Quantidade</span>
+        <input
+          name="newQuantity"
+          type="number"
+          min="0"
+          step="1"
+          placeholder="0"
+          required
+          [(ngModel)]="novoProduto.quantidade"
+        />
+      </label>
+      <button class="button button-primary add-button" type="submit" [disabled]="enviando">
+        {{ enviando ? 'Salvando...' : 'Adicionar produto' }}
+      </button>
+    </form>
+    <p class="form-hint">Informe o nome, o preço maior que zero e a quantidade. Use um nome ainda não cadastrado.</p>
+  </section>
+
+  <section class="panel search-panel" aria-labelledby="search-heading">
+    <div class="seção-cabeçalho">
+      <div>
+        <span class="section-kicker">Consulta</span>
+        <h2 id="search-heading">Buscar por ID</h2>
+      </div>
+    </div>
+    <form class="pesquisa-form" (ngSubmit)="buscarPorId()">
+      <label class="sr-only" for="search-id">ID do produto</label>
+      <input
+        id="search-id"
+        name="searchId"
+        type="number"
+        min="1"
+        step="1"
+        placeholder="Digite o ID do produto"
+        [(ngModel)]="buscaId"
+      />
+      <button class="button button-primary" type="submit">Buscar produto</button>
+    </form>
+    @if (produtoEncontrado(); as encontrado) {
+      <div class="search-result">
+        <div class="result-id">#{{ encontrado.id }}</div>
+        <div class="result-copy">
+          <strong>{{ encontrado.nome }}</strong>
+          <span>{{ encontrado.preco | currency: 'BRL' }} · {{ encontrado.quantidade }} unidades</span>
+        </div>
+      </div>
+    }
+  </section>
+
+  <section class="panel table-panel" aria-labelledby="list-heading">
+    <div class="section-heading list-heading">
+      <div>
+        <span class="section-kicker">Estoque</span>
+        <h2 id="list-heading">Todos os produtos</h2>
+      </div>
+      <button class="button button-secondary" type="button" (click)="carregarProdutos()" [disabled]="carregando">
+        {{ carregando ? 'Atualizando...' : 'Atualizar lista' }}
+      </button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Produto</th>
+            <th scope="col">Preço</th>
+            <th scope="col">Quantidade</th>
+            <th scope="col" class="actions-column">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (produto of produtos; track produto.id) {
+            @if (produtoEmEdicaoId === produto.id) {
+              <tr class="edit-row">
+                <td colspan="4">
+                  <form class="edit-form" #editForm="ngForm" (ngSubmit)="salvarEdicao(produto.id)">
+                    <label>
+                      <span>Nome</span>
+                      <input
+                        name="editName"
+                        type="text"
+                        maxlength="100"
+                        required
+                        [(ngModel)]="produtoEmEdicao.nome"
+                      />
+                    </label>
+                    <label>
+                      <span>Preço (R$)</span>
+                      <input
+                        name="editPrice"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        required
+                        [(ngModel)]="produtoEmEdicao.preco"
+                      />
+                    </label>
+                    <label>
+                      <span>Quantidade</span>
+                      <input
+                        name="editQuantity"
+                        type="number"
+                        min="0"
+                        step="1"
+                        required
+                        [(ngModel)]="produtoEmEdicao.quantidade"
+                      />
+                    </label>
+                    <div class="edit-actions">
+                      <button class="button button-primary button-small" type="submit" [disabled]="editForm.invalid || enviando">
+                        Salvar
+                      </button>
+                      <button class="button button-secondary button-small" type="button" (click)="cancelarEdicao()">
+                        Cancelar
+                      </button>
+                    </div>
+                  </form>
+                </td>
+              </tr>
+            } @else {
+              <tr>
+                <td>
+                  <div class="product-name">
+                    <span class="product-dot"></span>
+                    <span>{{ produto.nome }}</span>
+                  </div>
+                  <span class="product-id">ID {{ produto.id }}</span>
+                </td>
+                <td class="price-cell">{{ produto.preco | currency: 'BRL' }}</td>
+                <td>{{ produto.quantidade }}</td>
+                <td>
+                  <div class="row-actions">
+                    <button class="button button-secondary button-small" type="button" (click)="iniciarEdicao(produto)">
+                      Editar
+                    </button>
+                    <button class="button button-danger button-small" type="button" (click)="removerProduto(produto)">
+                      Remover
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          } @empty {
+            <tr>
+              <td colspan="4" class="empty-state">
+                @if (carregando) {
+                  Carregando produtos...
+                } @else {
+                  Nenhum produto cadastrado. Adicione o primeiro acima.
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <footer class="table-footer">
+      <span>{{ produtos.length }} {{ produtos.length === 1 ? 'produto cadastrado' : 'produtos cadastrados' }}</span>
+      <span class="connection-status"><span class="status-dot"></span> APIProdutos · SQLite</span>
+    </footer>
+  </section>
+
+  <footer class="page-footer">
+    <span>Operações conectadas à API de produtos</span>
+    <span>Angular · ASP.NET Core · SQLite</span>
+  </footer>
+</main>
