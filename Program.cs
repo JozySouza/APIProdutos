@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using APIProdutos.Data;
+using APIProdutos.Repositories;
+using APIProdutos.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +13,8 @@ builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<AppDBContext>(options =>
     options.UseSqlite("Data Source=produtos.db"));
+builder.Services.AddScoped<IProdutosRepository, ProdutoRepository>();
+builder.Services.AddScoped<IProdutoService, ProdutoService>();
 
 builder.Services.AddCors(options =>
 {
