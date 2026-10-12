@@ -1,47 +1,42 @@
 using Microsoft.AspNetCore.Mvc;
 using APIProdutos.Models;
-using APIProdutos.Data;
-using Microsoft.EntityFrameworkCore;
+using APIProdutos.Services;
 
 namespace APIProdutos.Controllers;
 
 [ApiController]
-
 [Route("api/[controller]")]
-
 public class ProdutosController : ControllerBase
 {
- private readonly AppDBContext _context;
+    private readonly IProdutoService _service;
 
-    public ProdutosController(AppDBContext context)
+    public ProdutosController(IProdutoService service)
     {
-        _context = context;
+        _service = service;
     }
 
     [HttpGet]
     public async Task<IActionResult> GetProdutos()
     {
-        // Lógica para obter produtos
-        var Produtos = await _context.Produtos.ToListAsync();
-        return Ok(Produtos);
+        var produtos = await _service.GetProdutosAsync();
+        return Ok(produtos);
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetProdutoById(int id)
     {
-        // Lógica para obter um produto específico pelo ID
         if (id <= 0)
         {
             return BadRequest(new { message = "ID inválido. Tente novamente." });
         }
 
-            var produto = await _context.Produtos.FindAsync(id);
-            if (produto == null)
-            {
-                return NotFound(new { message = "Produto não encontrado." });
-            }
-        
-        return Ok($"Produto encontrado: {produto.Nome}, Preço: {produto.Preco}, Quantidade: {produto.Quantidade}");  
+        var produto = await _service.GetByIdAsync(id);
+        if (produto == null)
+        {
+            return NotFound(new { message = "Produto não encontrado." });
+        }
+
+        return Ok(produto);
     }
 
     [HttpPost]
@@ -51,41 +46,55 @@ public class ProdutosController : ControllerBase
         {
             return BadRequest(ModelState);
         }
-        // Lógica para criar um novo produto
-        _context.Produtos.Add(produto);
-        await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetProdutoById), new { id = 1 }, produto);
-        
+        try
+        {
+            var produtoCriado = await _service.CreateAsync(produto);
+            return CreatedAtAction(nameof(GetProdutoById), new { id = produtoCriado.Id }, produtoCriado);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+       
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateProduto(int id, [FromBody] object produto)
+    public async Task<IActionResult> UpdateProduto(int id, [FromBody] Produto produto)
     {
-        // Lógica para atualizar um produto existente
-        if(ModelState.IsValid)
+        if (id <= 0)
+        {
+            return BadRequest(new { message = "ID inválido. Tente novamente." });
+        }
+
+        if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
         }
-        var produtoExistente = await _context.Produtos.FindAsync(id);
-        if (produtoExistente == null)
+
+        produto.Id = id;
+        var produtoAtualizado = await _service.UpdateAsync(produto);
+        if (produtoAtualizado == null)
         {
             return NotFound(new { message = "Produto não encontrado." });
         }
-        await _context.SaveChangesAsync();
-        return Ok($"Produto atualizado: {produtoExistente.Nome}, Preço: {produtoExistente.Preco}, Quantidade: {produtoExistente.Quantidade}");
+
+        return Ok(produtoAtualizado);
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteProduto(int id)
     {
-        // Lógica para deletar um produto existente
-        var produtoExistente = await _context.Produtos.FindAsync(id);
-        if (produtoExistente == null)
+        if (id <= 0)
+        {
+            return BadRequest(new { message = "ID inválido. Tente novamente." });
+        }
+
+        var removido = await _service.DeleteAsync(id);
+        if (!removido)
         {
             return NotFound(new { message = "Produto não encontrado." });
         }
-        _context.Produtos.Remove(produtoExistente);
-        await _context.SaveChangesAsync();
-        return Ok($"Produto deletado: {produtoExistente.Nome}");
+
+        return NoContent();
     }
 }
