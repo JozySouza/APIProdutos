@@ -1,5 +1,8 @@
-bin\
-obj\
+# .NET build output
+**/bin/
+**/obj/
+
+# SQLite databases
 *.db
 *.db-shm
 *.db-wal
