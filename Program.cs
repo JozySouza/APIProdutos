@@ -18,9 +18,9 @@ builder.Services.AddScoped<IProdutoService, ProdutoService>();
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("PermitirAngular", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins("http://localhost:4200", "http://localhost:4201")
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
@@ -36,10 +36,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
+app.UseCors("PermitirAngular");
 app.UseAuthorization();
-app.UseCors("PermitirAngular"); // Use a política de CORS definida
 
 app.MapControllers();
 
